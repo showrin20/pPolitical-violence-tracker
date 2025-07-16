@@ -6,11 +6,13 @@
     <title>Political Violence Incident Tracker - Home</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap');
 
         * {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', 'Noto Sans Bengali', sans-serif;
             margin: 0;
             padding: 0;
             box-sizing: border-box;
@@ -26,7 +28,8 @@
         }
 
         .hero-bg {
-            background: black;
+            background: linear-gradient(135deg, #0f0f0f, #1c1c1c, #3a3a3a);
+            color: white;
         }
 
         .card {
@@ -63,6 +66,19 @@
             transform: translateY(-2px);
         }
 
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #1f2937;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            transition: background 0.3s ease, transform 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+            transform: translateY(-2px);
+        }
+
         .glass-effect {
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(12px);
@@ -79,77 +95,99 @@
             padding: 1rem;
             border-radius: 12px;
         }
+
+        #previewMap {
+            height: 200px;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 640px) {
+            #previewMap { height: 150px; }
+            .card { padding: 1rem; }
+            .grid-cols-3 { grid-template-columns: 1fr; }
+            .text-4xl { font-size: 2rem; }
+        }
+
+        [lang="bn"] h1, [lang="bn"] h2, [lang="bn"] h3, [lang="bn"] p, [lang="bn"] a, [lang="bn"] button {
+            font-family: 'Noto Sans Bengali', sans-serif;
+        }
     </style>
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="gradient-bg">
+    <nav class="gradient-bg" role="navigation" aria-label="Main navigation">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-20">
                 <div class="flex items-center space-x-4">
                     <div class="glass-effect p-3 rounded-full">
-                        <i class="fas fa-shield-alt text-white text-2xl"></i>
+                        <i class="fas fa-shield-alt text-white text-2xl" aria-hidden="true"></i>
                     </div>
                     <div>
-                        <h1 class="text-white text-2xl font-bold tracking-tight">Political Violence Tracker</h1>
-                        <p class="text-white/90 text-sm font-light">Real-time incident monitoring</p>
+                        <h1 id="site-title" class="text-white text-2xl font-bold tracking-tight">Political Violence Tracker</h1>
+                        <p id="site-subtitle" class="text-white/90 text-sm font-light">Real-time incident monitoring</p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <a href="#features" class="text-white hover:text-white/80 transition-colors">Features</a>
-                    <a href="#about" class="text-white hover:text-white/80 transition-colors">About</a>
-                    <a href="dashboard.html" class="btn-primary">Try the Tracker</a>
+                    <a href="#features" id="nav-features" class="text-white hover:text-white/80 transition-colors">Features</a>
+                    <a href="#about" id="nav-about" class="text-white hover:text-white/80 transition-colors">About</a>
+                    <a href="map.html" id="nav-tracker" class="btn-primary">Try the Tracker</a>
+                    <button id="langToggle" class="btn-secondary" aria-label="Toggle language">বাংলা</button>
                 </div>
             </div>
         </div>
     </nav>
 
     <!-- Hero Section -->
-    <section class="hero-bg py-24">
+    <section class="hero-bg py-24" aria-labelledby="hero-heading">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 class="text-4xl md:text-5xl font-bold text-white mb-6 animate-slide-in">
+            <h1 id="hero-heading" class="text-4xl md:text-5xl font-bold text-white mb-6 animate-slide-in">
                 Track Political Violence in Real Time
             </h1>
-            <p class="text-lg text-white/90 max-w-2xl mx-auto mb-8 animate-slide-in">
+            <p id="hero-subheading" class="text-lg text-white/90 max-w-2xl mx-auto mb-8 animate-slide-in">
                 Monitor and analyze political violence incidents with our interactive map, detailed statistics, and advanced filtering tools.
             </p>
-            <a href="dashboard.html" class="btn-primary text-lg animate-slide-in">
-                <i class="fas fa-arrow-right mr-2"></i>
+            <div id="liveStats" class="text-white/90 mb-8 animate-slide-in" aria-live="polite">
+                <p>Loading statistics...</p>
+            </div>
+            <div id="previewMap" role="region" aria-label="Preview map of incidents"></div>
+            <a href="map.html" id="hero-cta" class="btn-primary text-lg mt-8 inline-block animate-slide-in">
+                <i class="fas fa-arrow-right mr-2" aria-hidden="true"></i>
                 Explore Now
             </a>
         </div>
     </section>
 
     <!-- Features Section -->
-    <section id="features" class="py-16">
+    <section id="features" class="py-16" aria-labelledby="features-heading">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="text-3xl font-bold text-gray-900 text-center mb-12 animate-slide-in">
+            <h2 id="features-heading" class="text-3xl font-bold text-gray-900 text-center mb-12 animate-slide-in">
                 Powerful Features
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div class="card p-8 animate-slide-in">
                     <div class="feature-icon mb-4">
-                        <i class="fas fa-map text-blue-600 text-2xl"></i>
+                        <i class="fas fa-map text-blue-600 text-2xl" aria-hidden="true"></i>
                     </div>
-                    <h3 class="text-xl font-semibold text-gray-900 mb-3">Interactive Map</h3>
+                    <h3 id="feature-map" class="text-xl font-semibold text-gray-900 mb-3">Interactive Map</h3>
                     <p class="text-gray-600">
                         Visualize incidents on an interactive map with clustering and detailed pop-ups for each event.
                     </p>
                 </div>
                 <div class="card p-8 animate-slide-in">
                     <div class="feature-icon mb-4">
-                        <i class="fas fa-chart-bar text-blue-600 text-2xl"></i>
+                        <i class="fas fa-chart-bar text-blue-600 text-2xl" aria-hidden="true"></i>
                     </div>
-                    <h3 class="text-xl font-semibold text-gray-900 mb-3">Real-Time Statistics</h3>
+                    <h3 id="feature-stats" class="text-xl font-semibold text-gray-900 mb-3">Real-Time Statistics</h3>
                     <p class="text-gray-600">
                         Access up-to-date statistics on total incidents, casualties, and unique locations.
                     </p>
                 </div>
                 <div class="card p-8 animate-slide-in">
                     <div class="feature-icon mb-4">
-                        <i class="fas fa-filter text-blue-600 text-2xl"></i>
+                        <i class="fas fa-filter text-blue-600 text-2xl" aria-hidden="true"></i>
                     </div>
-                    <h3 class="text-xl font-semibold text-gray-900 mb-3">Advanced Filters</h3>
+                    <h3 id="feature-filters" class="text-xl font-semibold text-gray-900 mb-3">Advanced Filters</h3>
                     <p class="text-gray-600">
                         Filter incidents by political party, location, and casualty count for targeted analysis.
                     </p>
@@ -159,55 +197,172 @@
     </section>
 
     <!-- About Section -->
-    <section id="about" class="py-16 bg-gray-50">
+    <section id="about" class="py-16 bg-gray-50" aria-labelledby="about-heading">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
                 <div class="animate-slide-in">
-                    <h2 class="text-3xl font-bold text-gray-900 mb-6">About the Tracker</h2>
-                    <p class="text-gray-600 mb-4">
+                    <h2 id="about-heading" class="text-3xl font-bold text-gray-900 mb-6">About the Tracker</h2>
+                    <p id="about-text-1" class="text-gray-600 mb-4">
                         The Political Violence Incident Tracker is a cutting-edge tool designed to monitor and analyze political violence incidents in real time. Our mission is to provide accurate, accessible, and actionable insights for researchers, journalists, and policymakers.
                     </p>
-                    <p class="text-gray-600">
+                    <p id="about-text-2" class="text-gray-600">
                         Built with advanced data crawling and visualization technologies, the tracker offers a user-friendly interface to explore incidents, view detailed statistics, and apply custom filters to focus on specific events or trends.
                     </p>
                 </div>
                 <div class="animate-slide-in">
-                    <img src="map.png" alt="Map visualization" class="rounded-lg shadow-lg">
+                    <img src="map.png" alt="Map visualization of political violence incidents" class="rounded-lg shadow-lg">
                 </div>
             </div>
         </div>
     </section>
 
     <!-- CTA Section -->
-    <section class="py-16 gradient-bg">
+    <section class="py-16 gradient-bg" aria-labelledby="cta-heading">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 class="text-3xl font-bold text-white mb-6 animate-slide-in">
+            <h2 id="cta-heading" class="text-3xl font-bold text-white mb-6 animate-slide-in">
                 Start Exploring Today
             </h2>
-            <p class="text-lg text-white/90 max-w-2xl mx-auto mb-8 animate-slide-in">
+            <p id="cta-subheading" class="text-lg text-white/90 max-w-2xl mx-auto mb-8 animate-slide-in">
                 Join thousands of users who rely on the Political Violence Incident Tracker to stay informed and make data-driven decisions.
             </p>
-            <a href="/tracker" class="btn-primary text-lg animate-slide-in">
-                <i class="fas fa-rocket mr-2"></i>
+            <a href="map.html" id="cta-button" class="btn-primary text-lg animate-slide-in">
+                <i class="fas fa-rocket mr-2" aria-hidden="true"></i>
                 Try it Now
             </a>
         </div>
     </section>
 
     <!-- Footer -->
-    <footer class="bg-gray-900 py-8">
+    <footer class="bg-gray-900 py-8" role="contentinfo">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col md:flex-row justify-between items-center">
                 <div class="text-white/90 mb-4 md:mb-0">
-                    <p>&copy; 2025 Political Violence Incident Tracker. All rights reserved.</p>
+                    <p id="footer-copyright">© 2025 Political Violence Incident Tracker. All rights reserved.</p>
                 </div>
                 <div class="flex space-x-6">
-                    <a href="#features" class="text-white/80 hover:text-white transition-colors">Features</a>
-                    <a href="#about" class="text-white/80 hover:text-white transition-colors">About</a>
-                    <a href="/tracker" class="text-white/80 hover:text-white transition-colors">Tracker</a>
+                    <a href="#features" id="footer-features" class="text-white/80 hover:text-white transition-colors">Features</a>
+                    <a href="#about" id="footer-about" class="text-white/80 hover:text-white transition-colors">About</a>
+                    <a href="map.html" id="footer-tracker" class="text-white/80 hover:text-white transition-colors">Tracker</a>
                 </div>
             </div>
         </div>
     </footer>
+
+    <script>
+        // API Base URL (use environment variable in production)
+        const API_BASE = process.env.API_BASE || 'http://localhost:8000';
+    
+        // Language content
+        const translations = {
+            en: {
+                'site-title': 'Political Violence Tracker',
+                'site-subtitle': 'Real-time incident monitoring',
+                'nav-features': 'Features',
+                'nav-about': 'About',
+                'nav-tracker': 'Try the Tracker',
+                'hero-heading': 'Track Political Violence in Real Time',
+                'hero-subheading': 'Monitor and analyze political violence incidents with our interactive map, detailed statistics, and advanced filtering tools.',
+                'features-heading': 'Powerful Features',
+                'feature-map': 'Interactive Map',
+                'feature-stats': 'Real-Time Statistics',
+                'feature-filters': 'Advanced Filters',
+                'about-heading': 'About the Tracker',
+                'about-text-1': 'The Political Violence Incident Tracker is a cutting-edge tool designed to monitor and analyze political violence incidents in real time. Our mission is to provide accurate, accessible, and actionable insights for researchers, journalists, and policymakers.',
+                'about-text-2': 'Built with advanced data crawling and visualization technologies, the tracker offers a user-friendly interface to explore incidents, view detailed statistics, and apply custom filters to focus on specific events or trends.',
+                'cta-heading': 'Start Exploring Today',
+                'cta-subheading': 'Join thousands of users who rely on the Political Violence Incident Tracker to stay informed and make data-driven decisions.',
+                'cta-button': 'Try it Now',
+                'footer-features': 'Features',
+                'footer-about': 'About',
+                'footer-tracker': 'Tracker',
+                'footer-copyright': '© 2025 Political Violence Incident Tracker. All rights reserved.'
+            },
+            bn: {
+                'site-title': 'রাজনৈতিক সহিংসতা ট্র্যাকার',
+                'site-subtitle': 'রিয়েল-টাইম ঘটনা পর্যবেক্ষণ',
+                'nav-features': 'বৈশিষ্ট্য',
+                'nav-about': 'সম্পর্কে',
+                'nav-tracker': 'ট্র্যাকার ব্যবহার করুন',
+                'hero-heading': 'রিয়েল টাইমে রাজনৈতিক সহিংসতা ট্র্যাক করুন',
+                'hero-subheading': 'আমাদের ইন্টারেক্টিভ মানচিত্র, বিস্তারিত পরিসংখ্যান এবং উন্নত ফিল্টারিং সরঞ্জাম দিয়ে রাজনৈতিক সহিংসতার ঘটনাগুলি পর্যবেক্ষণ ও বিশ্লেষণ করুন।',
+                'features-heading': 'শক্তিশালী বৈশিষ্ট্য',
+                'feature-map': 'ইন্টারেক্টিভ মানচিত্র',
+                'feature-stats': 'রিয়েল-টাইম পরিসংখ্যান',
+                'feature-filters': 'উন্নত ফিল্টার',
+                'about-heading': 'ট্র্যাকার সম্পর্কে',
+                'about-text-1': 'রাজনৈতিক সহিংসতা ট্র্যাকার একটি অত্যাধুনিক সরঞ্জাম যা রিয়েল টাইমে রাজনৈতিক সহিংসতার ঘটনাগুলি পর্যবেক্ষণ এবং বিশ্লেষণের জন্য ডিজাইন করা হয়েছে। আমাদের লক্ষ্য গবেষক, সাংবাদিক এবং নীতিনির্ধারকদের জন্য সঠিক, অ্যাক্সেসযোগ্য এবং কার্যকর তথ্য প্রদান করা।',
+                'about-text-2': 'উন্নত ডেটা ক্রলিং এবং ভিজ্যুয়ালাইজেশন প্রযুক্তির সাথে নির্মিত, ট্র্যাকারটি ঘটনাগুলি অন্বেষণ, বিস্তারিত পরিসংখ্যান দেখতে এবং নির্দিষ্ট ইভেন্ট বা প্রবণতাগুলিতে ফোকাস করতে কাস্টম ফিল্টার প্রয়োগ করার জন্য একটি ব্যবহারকারী-বান্ধব ইন্টারফেস সরবরাহ করে।',
+                'cta-heading': 'আজই অন্বেষণ শুরু করুন',
+                'cta-subheading': 'হাজার হাজার ব্যবহারকারীর সাথে যোগ দিন যারা রাজনৈতিক সহিংসতা ট্র্যাকারের উপর নির্ভর করে অবগত থাকতে এবং ডেটা-চালিত সিদ্ধান্ত নিতে।',
+                'cta-button': 'এখনই চেষ্টা করুন',
+                'footer-features': 'বৈশিষ্ট্য',
+                'footer-about': 'সম্পর্কে',
+                'footer-tracker': 'ট্র্যাকার',
+                'footer-copyright': '© ২০২৫ রাজনৈতিক সহিংসতা ট্র্যাকার। সর্বস্বত্ব সংরক্ষিত।'
+            }
+        };
+    
+        // On DOM ready
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeMap();
+            loadLiveStats();
+    
+            // Initialize language from saved setting or default to 'en'
+            const savedLang = localStorage.getItem('lang') || 'en';
+            setLanguage(savedLang);
+    
+            // Add click listener
+            document.getElementById('langToggle').addEventListener('click', toggleLanguage);
+        });
+    
+        // Preview Map
+        function initializeMap() {
+            const previewMap = L.map('previewMap').setView([23.8103, 90.4125], 7);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(previewMap);
+            L.marker([23.8103, 90.4125]).addTo(previewMap)
+                .bindPopup('Sample Incident in Dhaka')
+                .openPopup();
+        }
+    
+        // Fetch and show statistics
+        async function loadLiveStats() {
+            try {
+                const response = await fetch(`${API_BASE}/stats`);
+                const stats = await response.json();
+                document.getElementById('liveStats').innerHTML = `
+                    <p>${stats.total_incidents || 0} incidents | ${stats.total_deaths || 0} deaths | ${stats.total_injured || 0} injured</p>
+                `;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+                document.getElementById('liveStats').innerHTML = `
+                    <p>Failed to load statistics</p>
+                `;
+            }
+        }
+    
+        // Set specific language
+        function setLanguage(lang) {
+            document.documentElement.lang = lang;
+            localStorage.setItem('lang', lang);
+    
+            const toggleBtn = document.getElementById('langToggle');
+            toggleBtn.textContent = lang === 'bn' ? 'English' : 'বাংলা';
+    
+            Object.keys(translations[lang]).forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = translations[lang][id];
+            });
+        }
+    
+        // Toggle between Bangla and English
+        function toggleLanguage() {
+            const currentLang = document.documentElement.lang;
+            const newLang = currentLang === 'bn' ? 'en' : 'bn';
+            setLanguage(newLang);
+        }
+    </script>
+    
 </body>
 </html>

@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
     <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
     <style>
+        /* Existing styles unchanged */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
         * {
@@ -139,6 +140,28 @@
             background: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(4px);
         }
+
+        .mobile-menu {
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+
+        .mobile-menu.open {
+            max-height: 500px;
+            opacity: 1;
+        }
+
+        /* New style for content preview in map popup */
+        .content-preview {
+            font-size: 0.875rem;
+            color: #4b5563;
+            margin-top: 0.5rem;
+            line-height: 1.5;
+            max-height: 100px;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body>
@@ -155,12 +178,32 @@
                         <p class="text-white/90 text-sm font-light">Real-time incident monitoring platform</p>
                     </div>
                 </div>
-                <div class="flex items-center space-x-4">
+                <!-- Hamburger Icon for Mobile -->
+                <button id="mobileMenuBtn" class="md:hidden text-white focus:outline-none">
+                    <i class="fas fa-bars text-2xl"></i>
+                </button>
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex items-center space-x-4">
                     <button id="crawlBtn" class="glass-effect text-white px-6 py-2 rounded-lg font-medium">
                         <i class="fas fa-sync-alt mr-2"></i>
                         Crawl Today
                     </button>
+                
                     <button id="statsBtn" class="glass-effect text-white px-6 py-2 rounded-lg font-medium">
+                        <i class="fas fa-chart-bar mr-2"></i>
+                        Statistics
+                    </button>
+                </div>
+            </div>
+            <!-- Mobile Dropdown Menu -->
+            <div id="mobileMenu" class="mobile-menu md:hidden">
+                <div class="flex flex-col space-y-2 py-4">
+                    <button id="mobileCrawlBtn" class="glass-effect text-white px-6 py-2 rounded-lg font-medium text-left">
+                        <i class="fas fa-sync-alt mr-2"></i>
+                        Crawl Today
+                    </button>
+            
+                    <button id="mobileStatsBtn" class="glass-effect text-white px-6 py-2 rounded-lg font-medium text-left">
                         <i class="fas fa-chart-bar mr-2"></i>
                         Statistics
                     </button>
@@ -316,129 +359,15 @@
                 </div>
             </div>
         </div>
+    </div>
 
     <script>
-        // Global variables
         let currentIncidents = [];
         let filterOptions = { parties: [], locations: [] };
         let map;
 
         // API Base URL
-        const API_BASE = 'http://localhost:8000'; // Update this to your backend URL
-
-        // Dummy data for incidents with coordinates
-        const dummyIncidents = [
-            {
-                id: 1,
-                title: "Mitford Hospital Lynching Over Extortion",
-                published: "2025-07-09",
-                location: "Dhaka, Bangladesh",
-                party: "Jubo Dal",
-                deaths: 1,
-                injured: 3,
-                url: "https://example.com/dhaka-mitford-incident",
-                coordinates: [23.7099, 90.4071]
-            },
-            {
-                id: 2,
-                title: "Student Protest Against Political Extortion",
-                published: "2025-07-11",
-                location: "Dhaka University, Dhaka",
-                party: "Nonpartisan Student Groups",
-                deaths: 0,
-                injured: 12,
-                url: "https://example.com/student-protest-dhaka",
-                coordinates: [23.7333, 90.3928]
-            },
-            {
-                id: 3,
-                title: "Clash Between Rival Party Activists in Motijheel",
-                published: "2025-07-03",
-                location: "Motijheel, Dhaka",
-                party: "Awami League vs BNP",
-                deaths: 2,
-                injured: 20,
-                url: "https://example.com/motijheel-clash",
-                coordinates: [23.7361, 90.4196]
-            },
-            {
-                id: 4,
-                title: "Political March Turns Violent in Gulistan",
-                published: "2025-06-30",
-                location: "Gulistan, Dhaka",
-                party: "BNP",
-                deaths: 0,
-                injured: 18,
-                url: "https://example.com/gulistan-march",
-                coordinates: [23.7262, 90.4146]
-            },
-            {
-                id: 5,
-                title: "Ward-Level Fight Between Party Wings in Mirpur",
-                published: "2025-06-25",
-                location: "Mirpur-10, Dhaka",
-                party: "Jubo League vs Chhatra Dal",
-                deaths: 1,
-                injured: 7,
-                url: "https://example.com/mirpur-brawl",
-                coordinates: [23.8067, 90.3686]
-            },
-            {
-                id: 6,
-                title: "Petrol Bomb Attack on Procession in Shahbagh",
-                published: "2025-06-20",
-                location: "Shahbagh, Dhaka",
-                party: "Unknown",
-                deaths: 3,
-                injured: 9,
-                url: "https://example.com/shahbagh-attack",
-                coordinates: [23.7361, 90.3935]
-            },
-            {
-                id: 7,
-                title: "Khilgaon Market Shutdown Amid Political Unrest",
-                published: "2025-07-05",
-                location: "Khilgaon, Dhaka",
-                party: "Local Union Leaders",
-                deaths: 0,
-                injured: 5,
-                url: "https://example.com/khilgaon-strike",
-                coordinates: [23.7383, 90.4220]
-            },
-            {
-                id: 8,
-                title: "Protest Over Election Commission Bias Turns Violent",
-                published: "2025-07-02",
-                location: "Segunbagicha, Dhaka",
-                party: "Multiple Opposition Groups",
-                deaths: 0,
-                injured: 13,
-                url: "https://example.com/election-protest",
-                coordinates: [23.7326, 90.4100]
-            },
-            {
-                id: 9,
-                title: "Tejgaon Truck Stand Seized by Political Cadres",
-                published: "2025-07-08",
-                location: "Tejgaon, Dhaka",
-                party: "Political Syndicate (Unnamed)",
-                deaths: 0,
-                injured: 6,
-                url: "https://example.com/tejgaon-violence",
-                coordinates: [23.7654, 90.3931]
-            },
-            {
-                id: 10,
-                title: "Journalist Beaten Covering Rally in Paltan",
-                published: "2025-07-10",
-                location: "Paltan, Dhaka",
-                party: "Party A Supporters",
-                deaths: 0,
-                injured: 1,
-                url: "https://example.com/paltan-journalist-attack",
-                coordinates: [23.7316, 90.4144]
-            }
-        ];
+        const API_BASE = 'http://localhost:8000'; // Update to your backend URL
 
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
@@ -447,9 +376,25 @@
             loadFilterOptions();
             loadIncidents();
 
-            // Event listeners
+            // Event listeners for desktop buttons
             document.getElementById('crawlBtn').addEventListener('click', handleCrawl);
+            document.getElementById('dateRangeCrawlBtn').addEventListener('click', openDateRangeModal);
             document.getElementById('statsBtn').addEventListener('click', loadStats);
+            // Event listeners for mobile buttons
+            document.getElementById('mobileCrawlBtn').addEventListener('click', () => {
+                handleCrawl();
+                toggleMobileMenu();
+            });
+            document.getElementById('mobileDateRangeCrawlBtn').addEventListener('click', () => {
+                openDateRangeModal();
+                toggleMobileMenu();
+            });
+            document.getElementById('mobileStatsBtn').addEventListener('click', () => {
+                loadStats();
+                toggleMobileMenu();
+            });
+            // Hamburger menu toggle
+            document.getElementById('mobileMenuBtn').addEventListener('click', toggleMobileMenu);
             document.getElementById('refreshBtn').addEventListener('click', loadIncidents);
             document.getElementById('applyFilters').addEventListener('click', applyFilters);
             document.getElementById('clearFilters').addEventListener('click', clearFilters);
@@ -457,63 +402,47 @@
             document.getElementById('startDateRangeCrawl').addEventListener('click', startDateRangeCrawl);
         });
 
+        // Toggle mobile menu
+        function toggleMobileMenu() {
+            const mobileMenu = document.getElementById('mobileMenu');
+            mobileMenu.classList.toggle('open');
+            const menuBtn = document.getElementById('mobileMenuBtn');
+            menuBtn.innerHTML = mobileMenu.classList.contains('open')
+                ? '<i class="fas fa-times text-2xl"></i>'
+                : '<i class="fas fa-bars text-2xl"></i>';
+        }
+
         // Initialize the map
         function initializeMap() {
-            // Center map on Dhaka
-            map = L.map('map').setView([23.8103, 90.4125], 10);
-
-            // Base map layer
+            map = L.map('map').setView([23.8103, 90.4125], 10); // Center on Dhaka
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors'
             }).addTo(map);
-
-            // Create Marker Cluster Group
-            const markerClusterGroup = L.markerClusterGroup();
-
-            // Loop through incidents and add to cluster group
-            dummyIncidents.forEach(incident => {
-                const marker = L.marker(incident.coordinates);
-                const popupContent = `
-                    <div class="p-4 max-w-xs">
-                        <h3 class="font-semibold text-gray-900">${incident.title}</h3>
-                        <p class="text-sm text-gray-600 mt-1"><i class="fas fa-calendar mr-1"></i>${incident.published}</p>
-                        <p class="text-sm text-gray-600"><i class="fas fa-map-marker-alt mr-1"></i>${incident.location}</p>
-                        <p class="text-sm text-gray-600"><i class="fas fa-flag mr-1"></i>${incident.party}</p>
-                        <p class="text-sm text-red-600"><i class="fas fa-skull mr-1"></i>${incident.deaths} deaths</p>
-                        <p class="text-sm text-orange-600"><i class="fas fa-user-injured mr-1"></i>${incident.injured} injured</p>
-                        <a href="${incident.url}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm mt-2 inline-block"><i class="fas fa-external-link-alt mr-1"></i>View Report</a>
-                    </div>
-                `;
-                marker.bindPopup(popupContent);
-                markerClusterGroup.addLayer(marker);
-            });
-
-            // Add all clusters to the map
-            map.addLayer(markerClusterGroup);
         }
 
         // Render incidents on map
         function renderIncidentsOnMap(incidents) {
-            // Clear existing markers
+            const markerClusterGroup = L.markerClusterGroup();
             map.eachLayer(layer => {
-                if (layer instanceof L.Marker) {
+                if (layer instanceof L.Marker || layer instanceof L.MarkerClusterGroup) {
                     map.removeLayer(layer);
                 }
             });
-
-            const markerClusterGroup = L.markerClusterGroup();
             incidents.forEach(incident => {
-                if (incident.coordinates) {
-                    const marker = L.marker(incident.coordinates);
+                // Fallback coordinates if not provided
+                const coords = incident.coordinates || [23.8103, 90.4125];
+                if (coords && Array.isArray(coords) && coords.length === 2) {
+                    const marker = L.marker(coords);
                     const popupContent = `
                         <div class="p-4 max-w-xs">
-                            <h3 class="font-semibold text-gray-900">${incident.title}</h3>
-                            <p class="text-sm text-gray-600 mt-1"><i class="fas fa-calendar mr-1"></i>${new Date(incident.published).toLocaleDateString()}</p>
-                            <p class="text-sm text-gray-600"><i class="fas fa-map-marker-alt mr-1"></i>${incident.location}</p>
-                            <p class="text-sm text-gray-600"><i class="fas fa-flag mr-1"></i>${incident.party}</p>
-                            <p class="text-sm text-red-600"><i class="fas fa-skull mr-1"></i>${incident.deaths} deaths</p>
-                            <p class="text-sm text-orange-600"><i class="fas fa-user-injured mr-1"></i>${incident.injured} injured</p>
-                            <a href="${incident.url}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm mt-2 inline-block"><i class="fas fa-external-link-alt mr-1"></i>Read more</a>
+                            <h3 class="font-semibold text-gray-900">${incident.title || 'Untitled'}</h3>
+                            ${incident.content_preview ? `<p class="content-preview">${incident.content_preview}</p>` : ''}
+                            <p class="text-sm text-gray-600 mt-1"><i class="fas fa-calendar mr-1"></i>${new Date(incident.date || incident.published || Date.now()).toLocaleDateString()}</p>
+                            <p class="text-sm text-gray-600"><i class="fas fa-map-marker-alt mr-1"></i>${incident.location || 'Unknown'}</p>
+                            <p class="text-sm text-gray-600"><i class="fas fa-flag mr-1"></i>${incident.party || 'Unknown'}</p>
+                            <p class="text-sm text-red-600"><i class="fas fa-skull mr-1"></i>${incident.deaths || 0} deaths</p>
+                            <p class="text-sm text-orange-600"><i class="fas fa-user-injured mr-1"></i>${incident.injured || 0} injured</p>
+                            ${incident.url ? `<a href="${incident.url}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm mt-2 inline-block"><i class="fas fa-external-link-alt mr-1"></i>Read more</a>` : ''}
                         </div>
                     `;
                     marker.bindPopup(popupContent);
@@ -527,18 +456,15 @@
         async function loadStats() {
             try {
                 const response = await fetch(`${API_BASE}/stats`);
-                const stats = await response.json();
-                document.getElementById('totalIncidents').textContent = stats.total_incidents || dummyIncidents.length;
-                document.getElementById('totalDeaths').textContent = stats.total_deaths || dummyIncidents.reduce((sum, i) => sum + i.deaths, 0);
-                document.getElementById('totalInjured').textContent = stats.total_injured || dummyIncidents.reduce((sum, i) => sum + i.injured, 0);
-                document.getElementById('uniqueLocations').textContent = stats.unique_locations || new Set(dummyIncidents.map(i => i.location)).size;
+                if (!response.ok) throw new Error('Failed to fetch stats');
+                const data = await response.json();
+                document.getElementById('totalIncidents').textContent = data.total_incidents || 0;
+                document.getElementById('totalDeaths').textContent = data.total_deaths || 0;
+                document.getElementById('totalInjured').textContent = data.total_injured || 0;
+                document.getElementById('uniqueLocations').textContent = data.unique_locations || 0;
             } catch (error) {
                 console.error('Error loading stats:', error);
                 showNotification('Error loading statistics', 'error');
-                document.getElementById('totalIncidents').textContent = dummyIncidents.length;
-                document.getElementById('totalDeaths').textContent = dummyIncidents.reduce((sum, i) => sum + i.deaths, 0);
-                document.getElementById('totalInjured').textContent = dummyIncidents.reduce((sum, i) => sum + i.injured, 0);
-                document.getElementById('uniqueLocations').textContent = new Set(dummyIncidents.map(i => i.location)).size;
             }
         }
 
@@ -546,14 +472,17 @@
         async function loadFilterOptions() {
             try {
                 const response = await fetch(`${API_BASE}/filters`);
-                filterOptions = await response.json();
-                filterOptions.parties = [...new Set([...filterOptions.parties, ...dummyIncidents.map(i => i.party)])];
-                filterOptions.locations = [...new Set([...filterOptions.locations, ...dummyIncidents.map(i => i.location)])];
+                if (!response.ok) throw new Error('Failed to fetch filters');
+                const data = await response.json();
+                filterOptions = {
+                    parties: data.parties || [],
+                    locations: data.locations || []
+                };
                 populateFilterDropdowns();
             } catch (error) {
                 console.error('Error loading filter options:', error);
-                filterOptions.parties = [...new Set(dummyIncidents.map(i => i.party))];
-                filterOptions.locations = [...new Set(dummyIncidents.map(i => i.location))];
+                showNotification('Error loading filter options', 'error');
+                filterOptions = { parties: [], locations: [] };
                 populateFilterDropdowns();
             }
         }
@@ -596,18 +525,19 @@
             try {
                 const queryParams = new URLSearchParams(filters).toString();
                 const response = await fetch(`${API_BASE}/incidents?${queryParams}`);
+                if (!response.ok) throw new Error('Failed to fetch incidents');
                 const data = await response.json();
-                currentIncidents = data.incidents.length > 0 ? data.incidents : dummyIncidents;
+                currentIncidents = data.incidents || [];
                 renderIncidents(currentIncidents);
                 renderIncidentsOnMap(currentIncidents);
                 document.getElementById('incidentCount').textContent = `${currentIncidents.length} incidents found`;
             } catch (error) {
                 console.error('Error loading incidents:', error);
                 showNotification('Error loading incidents', 'error');
-                currentIncidents = dummyIncidents;
+                currentIncidents = [];
                 renderIncidents(currentIncidents);
                 renderIncidentsOnMap(currentIncidents);
-                document.getElementById('incidentCount').textContent = `${currentIncidents.length} incidents found`;
+                document.getElementById('incidentCount').textContent = '0 incidents found';
             } finally {
                 loadingState.remove();
             }
@@ -629,63 +559,40 @@
             }
 
             incidents.forEach(incident => {
-                const casualties = incident.deaths + incident.injured;
+                const casualties = (incident.deaths || 0) + (incident.injured || 0);
                 const severityClass = casualties > 10 ? 'severity-high' : casualties > 0 ? 'severity-medium' : 'severity-low';
                 const incidentElement = document.createElement('div');
                 incidentElement.className = `p-6 hover:bg-gray-50 transition-colors duration-200 ${severityClass}`;
                 incidentElement.innerHTML = `
                     <div class="flex items-start justify-between">
                         <div class="flex-1">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-2">${incident.title}</h3>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">${incident.title || 'Untitled'}</h3>
                             <div class="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-3">
-                                <span>
-                                    <i class="fas fa-calendar mr-1"></i>
-                                    ${new Date(incident.published).toLocaleDateString()}
-                                </span>
-                                ${incident.location ? `
-                                    <span>
-                                        <i class="fas fa-map-marker-alt mr-1"></i>
-                                        ${incident.location}
-                                    </span>
-                                ` : ''}
-                                ${incident.party ? `
-                                    <span>
-                                        <i class="fas fa-flag mr-1"></i>
-                                        ${incident.party}
-                                    </span>
-                                ` : ''}
+                                <span><i class="fas fa-calendar mr-1"></i>${new Date(incident.date || incident.published || Date.now()).toLocaleDateString()}</span>
+                                <span><i class="fas fa-map-marker-alt mr-1"></i>${incident.location || 'Unknown'}</span>
+                                <span><i class="fas fa-flag mr-1"></i>${incident.party || 'Unknown'}</span>
+                                ${incident.source ? `<span><i class="fas fa-building mr-1"></i>${incident.source}</span>` : ''}
                             </div>
                             <div class="flex items-center gap-6">
                                 <div class="flex items-center">
                                     <i class="fas fa-skull text-red-500 mr-2"></i>
-                                    <span class="text-red-600 font-medium">${incident.deaths} deaths</span>
+                                    <span class="text-red-600 font-medium">${incident.deaths || 0} deaths</span>
                                 </div>
                                 <div class="flex items-center">
                                     <i class="fas fa-user-injured text-orange-500 mr-2"></i>
-                                    <span class="text-orange-600 font-medium">${incident.injured} injured</span>
+                                    <span class="text-orange-600 font-medium">${incident.injured || 0} injured</span>
                                 </div>
                             </div>
                         </div>
-                        <div class="ml-4">
+                        ${incident.url ? `
                             <a href="${incident.url}" target="_blank" class="text-blue-600 hover:text-blue-800 transition-colors">
                                 <i class="fas fa-external-link-alt"></i>
                             </a>
-                        </div>
+                        ` : ''}
                     </div>
                 `;
                 incidentsList.appendChild(incidentElement);
             });
-        }
-
-        // Render error state
-        function renderError() {
-            const incidentsList = document.getElementById('incidentsList');
-            incidentsList.innerHTML = `
-                <div class="text-center py-12">
-                    <i class="fas fa-exclamation-triangle text-4xl text-red-400 mb-4"></i>
-                    <p class="text-gray-600">Error loading incidents. Please try again.</p>
-                </div>
-            `;
         }
 
         // Apply filters
@@ -711,12 +618,18 @@
         // Handle crawl button click
         function handleCrawl() {
             const crawlBtn = document.getElementById('crawlBtn');
+            const mobileCrawlBtn = document.getElementById('mobileCrawlBtn');
             const originalText = crawlBtn.innerHTML;
+            const originalMobileText = mobileCrawlBtn.innerHTML;
             crawlBtn.innerHTML = '<i class="fas fa-spinner loading-spinner mr-2"></i>Crawling...';
+            mobileCrawlBtn.innerHTML = '<i class="fas fa-spinner loading-spinner mr-2"></i>Crawling...';
             crawlBtn.disabled = true;
+            mobileCrawlBtn.disabled = true;
             startCrawl().finally(() => {
                 crawlBtn.innerHTML = originalText;
+                mobileCrawlBtn.innerHTML = originalMobileText;
                 crawlBtn.disabled = false;
+                mobileCrawlBtn.disabled = false;
             });
         }
 
@@ -725,53 +638,26 @@
             try {
                 const response = await fetch(`${API_BASE}/crawl`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+                    headers: { 'Content-Type': 'application/json' }
                 });
-                if (response.ok) {
-                    showNotification('Crawl started successfully!', 'success');
-                    setTimeout(() => {
-                        loadStats();
-                        loadIncidents();
-                        loadFilterOptions();
-                    }, 5000);
-                } else {
-                    showNotification('Failed to start crawl', 'error');
-                }
+                if (!response.ok) throw new Error('Failed to start crawl');
+                const data = await response.json();
+                showNotification(data.message || 'Crawl started successfully!', 'success');
+                setTimeout(() => {
+                    loadStats();
+                    loadIncidents();
+                    loadFilterOptions();
+                }, 5000); // Delay to allow crawler to complete
             } catch (error) {
                 console.error('Error starting crawl:', error);
                 showNotification('Error starting crawl', 'error');
             }
         }
 
-        // Show notification
-        function showNotification(message, type = 'info') {
-            const notification = document.getElementById('notification');
-            const icon = document.getElementById('notificationIcon');
-            const messageEl = document.getElementById('notificationMessage');
-            messageEl.textContent = message;
-
-            if (type === 'success') {
-                icon.className = 'fas fa-check-circle text-green-500 mr-3';
-                notification.className = 'notification bg-white rounded-lg shadow-lg border-l-4 border-green-500 p-4 max-w-sm';
-            } else if (type === 'error') {
-                icon.className = 'fas fa-exclamation-circle text-red-500 mr-3';
-                notification.className = 'notification bg-white rounded-lg shadow-lg border-l-4 border-red-500 p-4 max-w-sm';
-            } else {
-                icon.className = 'fas fa-info-circle text-blue-500 mr-3';
-                notification.className = 'notification bg-white rounded-lg shadow-lg border-l-4 border-blue-500 p-4 max-w-sm';
-            }
-
-            notification.classList.add('show');
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 3000);
-        }
-
-        // Close date range modal
-        function closeDateRangeModal() {
-            document.getElementById('dateRangeModal').classList.add('hidden');
+        // Open date range modal
+        function openDateRangeModal() {
+            document.getElementById('dateRangeModal').classList.remove('hidden');
+            toggleMobileMenu(); // Close mobile menu when opening modal
         }
 
         // Start date range crawl
@@ -782,33 +668,53 @@
                 showNotification('Please select both start and end dates', 'error');
                 return;
             }
+            const startDateBtn = document.getElementById('startDateRangeCrawl');
+            const originalText = startDateBtn.innerHTML;
+            startDateBtn.innerHTML = '<i class="fas fa-spinner loading-spinner mr-2"></i>Crawling...';
+            startDateBtn.disabled = true;
             try {
                 const response = await fetch(`${API_BASE}/crawl/range`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        start_date: startDate,
-                        end_date: endDate
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ start_date: startDate, end_date: endDate })
                 });
-                if (response.ok) {
-                    showNotification('Date range crawl started!', 'success');
-                    closeDateRangeModal();
-                    setTimeout(() => {
-                        loadStats();
-                        loadIncidents();
-                        loadFilterOptions();
-                    }, 10000);
-                } else {
-                    const error = await response.json();
-                    showNotification(error.detail || 'Failed to start date range crawl', 'error');
-                }
+                if (!response.ok) throw new Error('Failed to start date range crawl');
+                const data = await response.json();
+                showNotification(data.message || 'Date range crawl started!', 'success');
+                closeDateRangeModal();
+                setTimeout(() => {
+                    loadStats();
+                    loadIncidents();
+                    loadFilterOptions();
+                }, 10000); // Longer delay for date range crawl
             } catch (error) {
                 console.error('Error starting date range crawl:', error);
                 showNotification('Error starting date range crawl', 'error');
+            } finally {
+                startDateBtn.innerHTML = originalText;
+                startDateBtn.disabled = false;
             }
+        }
+
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            const icon = document.getElementById('notificationIcon');
+            const messageEl = document.getElementById('notificationMessage');
+            messageEl.textContent = message;
+
+            notification.className = `notification bg-white rounded-lg shadow-lg border-l-4 p-4 max-w-sm ${type === 'success' ? 'border-green-500' : type === 'error' ? 'border-red-500' : 'border-blue-500'}`;
+            icon.className = `fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} ${type === 'success' ? 'text-green-500' : type === 'error' ? 'text-red-500' : 'text-blue-500'} mr-3`;
+
+            notification.classList.add('show');
+            setTimeout(() => notification.classList.remove('show'), 3000);
+        }
+
+        // Close date range modal
+        function closeDateRangeModal() {
+            document.getElementById('dateRangeModal').classList.add('hidden');
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
         }
     </script>
 </body>
