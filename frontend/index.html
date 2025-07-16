@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Political Violence Incident Tracker - Home</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        * {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f8fafc;
+            min-height: 100vh;
+        }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%);
+        }
+
+        .hero-bg {
+            background: black;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+        }
+
+        .animate-slide-in {
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            transition: background 0.3s ease, transform 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: background 0.3s ease;
+        }
+
+        .glass-effect:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .feature-icon {
+            background: #eff6ff;
+            padding: 1rem;
+            border-radius: 12px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="gradient-bg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <div class="flex items-center space-x-4">
+                    <div class="glass-effect p-3 rounded-full">
+                        <i class="fas fa-shield-alt text-white text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-white text-2xl font-bold tracking-tight">Political Violence Tracker</h1>
+                        <p class="text-white/90 text-sm font-light">Real-time incident monitoring</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="#features" class="text-white hover:text-white/80 transition-colors">Features</a>
+                    <a href="#about" class="text-white hover:text-white/80 transition-colors">About</a>
+                    <a href="dashboard.html" class="btn-primary">Try the Tracker</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-bg py-24">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold text-white mb-6 animate-slide-in">
+                Track Political Violence in Real Time
+            </h1>
+            <p class="text-lg text-white/90 max-w-2xl mx-auto mb-8 animate-slide-in">
+                Monitor and analyze political violence incidents with our interactive map, detailed statistics, and advanced filtering tools.
+            </p>
+            <a href="dashboard.html" class="btn-primary text-lg animate-slide-in">
+                <i class="fas fa-arrow-right mr-2"></i>
+                Explore Now
+            </a>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-gray-900 text-center mb-12 animate-slide-in">
+                Powerful Features
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="card p-8 animate-slide-in">
+                    <div class="feature-icon mb-4">
+                        <i class="fas fa-map text-blue-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">Interactive Map</h3>
+                    <p class="text-gray-600">
+                        Visualize incidents on an interactive map with clustering and detailed pop-ups for each event.
+                    </p>
+                </div>
+                <div class="card p-8 animate-slide-in">
+                    <div class="feature-icon mb-4">
+                        <i class="fas fa-chart-bar text-blue-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">Real-Time Statistics</h3>
+                    <p class="text-gray-600">
+                        Access up-to-date statistics on total incidents, casualties, and unique locations.
+                    </p>
+                </div>
+                <div class="card p-8 animate-slide-in">
+                    <div class="feature-icon mb-4">
+                        <i class="fas fa-filter text-blue-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">Advanced Filters</h3>
+                    <p class="text-gray-600">
+                        Filter incidents by political party, location, and casualty count for targeted analysis.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="py-16 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                <div class="animate-slide-in">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-6">About the Tracker</h2>
+                    <p class="text-gray-600 mb-4">
+                        The Political Violence Incident Tracker is a cutting-edge tool designed to monitor and analyze political violence incidents in real time. Our mission is to provide accurate, accessible, and actionable insights for researchers, journalists, and policymakers.
+                    </p>
+                    <p class="text-gray-600">
+                        Built with advanced data crawling and visualization technologies, the tracker offers a user-friendly interface to explore incidents, view detailed statistics, and apply custom filters to focus on specific events or trends.
+                    </p>
+                </div>
+                <div class="animate-slide-in">
+                    <img src="map.png" alt="Map visualization" class="rounded-lg shadow-lg">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-16 gradient-bg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl font-bold text-white mb-6 animate-slide-in">
+                Start Exploring Today
+            </h2>
+            <p class="text-lg text-white/90 max-w-2xl mx-auto mb-8 animate-slide-in">
+                Join thousands of users who rely on the Political Violence Incident Tracker to stay informed and make data-driven decisions.
+            </p>
+            <a href="/tracker" class="btn-primary text-lg animate-slide-in">
+                <i class="fas fa-rocket mr-2"></i>
+                Try it Now
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="text-white/90 mb-4 md:mb-0">
+                    <p>&copy; 2025 Political Violence Incident Tracker. All rights reserved.</p>
+                </div>
+                <div class="flex space-x-6">
+                    <a href="#features" class="text-white/80 hover:text-white transition-colors">Features</a>
+                    <a href="#about" class="text-white/80 hover:text-white transition-colors">About</a>
+                    <a href="/tracker" class="text-white/80 hover:text-white transition-colors">Tracker</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
