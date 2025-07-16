@@ -95,5 +95,4 @@ async def get_filters():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Mount frontend static files (adjust the path if needed)
 app.mount("/", StaticFiles(directory="../frontend", html=True), name="frontend")
