@@ -95,4 +95,6 @@ async def get_filters():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-app.mount("/", StaticFiles(directory="../frontend", html=True), name="frontend")
+@app.get("/")
+def read_root():
+    return {"message": "FastAPI backend is live and running on Render 🚀"}
