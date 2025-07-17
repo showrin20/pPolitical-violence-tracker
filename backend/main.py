@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 import json, os, asyncio
 from datetime import datetime
@@ -10,14 +11,15 @@ app = FastAPI()
 # Enable CORS for frontend dev
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # tighten this for prod!
+    allow_origins=["*"],  # tighten for prod
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Resolve path to news_data.json relative to this file (main.py)
+# Resolve paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_PATH = os.path.join(BASE_DIR, 'data', 'news_data.json')
+FRONTEND_DIR = os.path.abspath(os.path.join(BASE_DIR, "../frontend"))
 
 class DateRange(BaseModel):
     start_date: str
@@ -72,7 +74,6 @@ async def start_crawl():
 @app.post("/crawl/range")
 async def start_date_range_crawl(date_range: DateRange):
     try:
-        # Pass dates as CLI args to news_scraper.py, your scraper must accept these
         await run_crawler([
             "--start", date_range.start_date,
             "--end", date_range.end_date
@@ -95,6 +96,15 @@ async def get_filters():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/")
-def read_root():
-    return {"message": "FastAPI backend is live and running on Render 🚀"}
+# Serve static files (like CSS/JS) from frontend dir
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
+
+# Serve index.html directly for root ("/")
+@app.get("/", response_class=HTMLResponse)
+async def serve_root():
+    index_path = os.path.join(FRONTEND_DIR, "index.html")
+    try:
+        with open(index_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="index.html not found in frontend directory")
