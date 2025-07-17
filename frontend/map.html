@@ -40,7 +40,7 @@
 
         .card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+            box-shadow: 0 12px 32px rgba(0, 3, 0, 0.12);
         }
 
         .animate-slide-in {
@@ -94,6 +94,7 @@
             border-radius: 16px;
             border: 1px solid #e2e8f0;
             margin-bottom: 2rem;
+            z-index: 400; /* Ensure map is below modal */
         }
 
         .btn-primary {
@@ -138,6 +139,7 @@
         .modal {
             background: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(4px);
+            z-index: 1001; /* Increased to appear above map */
         }
 
         .mobile-menu {
@@ -182,9 +184,12 @@
                 <div class="hidden md:flex items-center space-x-4">
                     <button id="crawlBtn" class="glass-effect text-white px-6 py-2 rounded-lg font-medium">
                         <i class="fas fa-sync-alt mr-2"></i>
-                        Crawl Today
+                        Craw Today
                     </button>
-                   
+                    <button id="dateRangeBtn" class="glass-effect text-white px-6 py-2 rounded-lg font-medium">
+                        <i class="fas fa-calendar-alt mr-2"></i>
+                        Date Range
+                    </button>
                     <button id="statsBtn" class="glass-effect text-white px-6 py-2 rounded-lg font-medium">
                         <i class="fas fa-chart-bar mr-2"></i>
                         Statistics
@@ -196,6 +201,10 @@
                     <button id="mobileCrawlBtn" class="glass-effect text-white px-6 py-2 rounded-lg font-medium text-left">
                         <i class="fas fa-sync-alt mr-2"></i>
                         Crawl Today
+                    </button>
+                    <button id="mobileDateRangeBtn" class="glass-effect text-white px-6 py-2 rounded-lg font-medium text-left">
+                        <i class="fas fa-calendar-alt mr-2"></i>
+                        Date Range
                     </button>
                     <button id="mobileStatsBtn" class="glass-effect text-white px-6 py-2 rounded-lg font-medium text-left">
                         <i class="fas fa-chart-bar mr-2"></i>
@@ -220,7 +229,7 @@
             <div class="card p-6 animate-slide-in">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text.gray-500 text-sm font-medium">Total Incidents</p>
+                        <p class="text-gray-500 text-sm font-medium">Total Incidents</p>
                         <p id="totalIncidents" class="text-3xl font-bold text-gray-900">-</p>
                     </div>
                     <div class="bg-blue-50 p-3 rounded-full">
@@ -232,7 +241,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-gray-500 text-sm font-medium">Total Deaths</p>
-                        <p id="totalDeaths" class="text- plages:1-10-2025; font-bold text-red-600">-</p>
+                        <p id="totalDeaths" class="text-3xl font-bold text-red-600">-</p>
                     </div>
                     <div class="bg-red-50 p-3 rounded-full">
                         <i class="fas fa-skull text-red-600 text-xl"></i>
@@ -314,6 +323,7 @@
                 </div>
             </div>
             <div id="incidentsList" class="divide-y divide-gray-100"></div>
+            <div id="paginationControls" class="flex justify-center space-x-3 p-4"></div>
         </div>
 
         <div id="notification" class="notification bg-white rounded-lg shadow-lg border-l-4 border-blue-500 p-4 max-w-sm">
@@ -325,8 +335,8 @@
             </div>
         </div>
 
-        <div id="dateRangeModal" class="modal fixed inset-0 hidden flex items-center justify-center z-50">
-            <div class="card p-8 max-w-md w-full mx-4">
+        <div id="dateRangeModal" class="modal fixed inset-0 hidden flex items-center justify-center">
+            <div class="card p-8 max-w-md w-full mx-4 relative z-[1002]">
                 <h3 class="text-xl font-bold text-gray-900 mb-6">Crawl Date Range</h3>
                 <div class="space-y-6">
                     <div>
@@ -353,8 +363,13 @@
         let currentIncidents = [];
         let filterOptions = { parties: [], locations: [] };
         let map;
+        let currentPage = 1;
+        const incidentsPerPage = 10;
 
-        const API_BASE = 'http://localhost:8000';
+        const API_BASE = 
+            typeof window !== 'undefined' && window.location.hostname === 'localhost'
+                ? 'http://localhost:8000'
+                : 'https://political-violence-tracker.onrender.com';
 
         document.addEventListener('DOMContentLoaded', function() {
             initializeMap();
@@ -363,9 +378,14 @@
             loadIncidents();
 
             document.getElementById('crawlBtn').addEventListener('click', handleCrawl);
+            document.getElementById('dateRangeBtn').addEventListener('click', openDateRangeModal);
             document.getElementById('statsBtn').addEventListener('click', loadStats);
             document.getElementById('mobileCrawlBtn').addEventListener('click', () => {
                 handleCrawl();
+                toggleMobileMenu();
+            });
+            document.getElementById('mobileDateRangeBtn').addEventListener('click', () => {
+                openDateRangeModal();
                 toggleMobileMenu();
             });
             document.getElementById('mobileStatsBtn').addEventListener('click', () => {
@@ -497,16 +517,16 @@
                 const response = await fetch(`${API_BASE}/incidents?${queryParams}`);
                 if (!response.ok) throw new Error('Failed to fetch incidents');
                 const data = await response.json();
-                console.log('Incidents data:', data); // Debug API response
                 currentIncidents = data.incidents || [];
-                renderIncidents(currentIncidents);
+                currentPage = 1; // Reset to first page when loading new incidents
+                renderIncidentsPaginated(currentIncidents);
                 renderIncidentsOnMap(currentIncidents);
                 document.getElementById('incidentCount').textContent = `${currentIncidents.length} incidents found`;
             } catch (error) {
                 console.error('Error loading incidents:', error);
                 showNotification('Error loading incidents', 'error');
                 currentIncidents = [];
-                renderIncidents(currentIncidents);
+                renderIncidentsPaginated(currentIncidents);
                 renderIncidentsOnMap(currentIncidents);
                 document.getElementById('incidentCount').textContent = '0 incidents found';
             } finally {
@@ -514,7 +534,7 @@
             }
         }
 
-        function renderIncidents(incidents) {
+        function renderIncidentsPaginated(incidents) {
             const incidentsList = document.getElementById('incidentsList');
             incidentsList.innerHTML = '';
 
@@ -525,10 +545,15 @@
                         <p class="text-gray-600">No incidents found</p>
                     </div>
                 `;
+                document.getElementById('paginationControls').innerHTML = '';
                 return;
             }
 
-            incidents.forEach(incident => {
+            const start = (currentPage - 1) * incidentsPerPage;
+            const end = start + incidentsPerPage;
+            const pageIncidents = incidents.slice(start, end);
+
+            pageIncidents.forEach(incident => {
                 const casualties = (incident.deaths || 0) + (incident.injured || 0);
                 const severityClass = casualties > 10 ? 'severity-high' : casualties > 0 ? 'severity-medium' : 'severity-low';
                 const incidentElement = document.createElement('div');
@@ -563,6 +588,51 @@
                 `;
                 incidentsList.appendChild(incidentElement);
             });
+
+            renderPaginationControls(incidents.length);
+        }
+
+        function renderPaginationControls(totalIncidents) {
+            const paginationControls = document.getElementById('paginationControls');
+            paginationControls.innerHTML = '';
+
+            const totalPages = Math.ceil(totalIncidents / incidentsPerPage);
+            if (totalPages <= 1) return;
+
+            const prevBtn = document.createElement('button');
+            prevBtn.textContent = 'Previous';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.className = 'btn-secondary px-4 py-1 rounded disabled:opacity-50';
+            prevBtn.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderIncidentsPaginated(currentIncidents);
+                }
+            });
+            paginationControls.appendChild(prevBtn);
+
+            for (let i = 1; i <= totalPages; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.textContent = i;
+                pageBtn.className = `px-3 py-1 rounded ${i === currentPage ? 'bg-blue-600 text-white' : 'btn-secondary'}`;
+                pageBtn.addEventListener('click', () => {
+                    currentPage = i;
+                    renderIncidentsPaginated(currentIncidents);
+                });
+                paginationControls.appendChild(pageBtn);
+            }
+
+            const nextBtn = document.createElement('button');
+            nextBtn.textContent = 'Next';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.className = 'btn-secondary px-4 py-1 rounded disabled:opacity-50';
+            nextBtn.addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderIncidentsPaginated(currentIncidents);
+                }
+            });
+            paginationControls.appendChild(nextBtn);
         }
 
         function debounce(func, wait) {
@@ -654,7 +724,6 @@
 
         function openDateRangeModal() {
             document.getElementById('dateRangeModal').classList.remove('hidden');
-            toggleMobileMenu();
         }
 
         async function startDateRangeCrawl() {

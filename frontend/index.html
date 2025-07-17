@@ -321,7 +321,10 @@
 
     <script>
         // API Base URL (use environment variable in production)
-        const API_BASE = process.env.API_BASE || 'https://political-violence-tracker.onrender.com';
+        const API_BASE =
+  typeof window !== 'undefined' && window.location.hostname === 'localhost'
+    ? 'http://localhost:8000'
+    : 'https://political-violence-tracker.onrender.com';
 
         // Language content
         const translations = {

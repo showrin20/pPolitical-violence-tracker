@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+
+# Virtual env
+venv/
+env/
+
+# Playwright browsers
+playwright/.cache/
+playwright/.local-browsers/
+
+# Docker
+*.log
+*.pid
+*.sock
+
+# VSCode & MacOS
+.vscode/
+.DS_Store
+
+# Node (if frontend uses React/Vite)
+frontend/node_modules/
+frontend/dist/
